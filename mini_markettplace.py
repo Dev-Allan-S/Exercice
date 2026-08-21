@@ -1,5 +1,4 @@
 import json
-
 class User:
     next_id=1
     def __init__(self, user_name, user_id=None):
@@ -50,12 +49,14 @@ class Users:
                 return user
 
     def load_users(self):
-        with open("markettplace_data.json", "r") as data:
-            users=json.loads(data.read())
-        users=User.load_user(users.get("Users"))
-        for user in users:
-            self.users.append(user)
-
+        try:
+            with open("markettplace_data.json", "r") as data:
+                users=json.loads(data.read())
+            users=User.load_user(users.get("Users"))
+            for user in users:
+                self.users.append(user)
+        except json.JSONDecodeError:
+            print("db not found")
     def __str__(self):
         return f"{self.users}"
 
@@ -99,7 +100,7 @@ class Product:
         return self.__str__()
 
 class Marketplace:
-    def __init__(self, users=None):
+    def __init__(self, users):
         self.storage=[]
         self.users=users
         self.load_storage()
@@ -145,6 +146,7 @@ class Marketplace:
 
     def prepare_product_to_save(self):
         temp_data=[]
+        print(self.storage)
         for product in self.storage:
             data=product.__dict__
             temp_data.append(data)
@@ -153,6 +155,7 @@ class Marketplace:
     def prepare_user_to_save(self):
         temp_data=[]
         users=self.users
+        print(users)
         for user in users.users:
             data=user.__dict__
             temp_data.append(data)
@@ -176,11 +179,14 @@ class Marketplace:
             data.write(json.dumps({"Sellers": clear_data}, indent=4))
 
     def load_storage(self):
-        with open("markettplace_data.json", "r") as data:
-            storage=(json.loads(data.read()))
-            storage=Product.load_product(storage.get("Product"))
-        for product in storage:
-            self.storage.append(product)
+        try:
+            with open("markettplace_data.json", "r") as data:
+                storage=(json.loads(data.read()))
+                storage=Product.load_product(storage.get("Product"))
+            for product in storage:
+                self.storage.append(product)
+        except json.JSONDecodeError:
+            print("Db not found")
 
     def load_hostory_of_sales(self):
         with open("sales_history_new.json", "r") as data:
@@ -223,11 +229,6 @@ class Sale:
         return self.__str__()
 
 users = Users()
-ana=User("ana")
-seller=users.select_user("maria")
-users.add_user(ana)
 marketplace=Marketplace(users)
-monitor=Product("Monitor", 2000)
-marketplace.add_product(monitor)
-marketplace.load_hostory_of_sales()
-marketplace.list_of_salers()
+marketplace.marketplace_products()
+users.list_of_users()
