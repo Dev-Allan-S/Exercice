@@ -1,0 +1,30 @@
+{
+    "Product": [
+        {
+            "product_name": "Computador",
+            "price": 3500,
+            "sold": false,
+            "product_id": 1
+        },
+        {
+            "product_name": "Notebook",
+            "price": 5000,
+            "sold": false,
+            "product_id": 2
+        }
+    ],
+    "Users": [
+        {
+            "user_name": "joao",
+            "user_id": 1
+        },
+        {
+            "user_name": "maria",
+            "user_id": 2
+        },
+        {
+            "user_name": "thiago",
+            "user_id": 3
+        }
+    ]
+}

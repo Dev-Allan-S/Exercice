@@ -1,0 +1,36 @@
+{
+    "Sellers": [
+        {
+            "Product": {
+                "product_name": "Notebook",
+                "price": 5000,
+                "sold": true,
+                "product_id": 2
+            },
+            "Seller": {
+                "user_name": "maria",
+                "user_id": 2
+            },
+            "Buyer": {
+                "user_name": "joao",
+                "user_id": 1
+            }
+        },
+        {
+            "Product": {
+                "product_name": "Computador",
+                "price": 3500,
+                "sold": true,
+                "product_id": 1
+            },
+            "Seller": {
+                "user_name": "maria",
+                "user_id": 2
+            },
+            "Buyer": {
+                "user_name": "thiago",
+                "user_id": 3
+            }
+        }
+    ]
+}
