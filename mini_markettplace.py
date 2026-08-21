@@ -168,10 +168,12 @@ class Marketplace:
         for item in self.sale_completed:
             temp_data.append(item.__dict__)
         for item in temp_data:
-            clear_data.append({"Product":item.get("product").__dict__, "Seller":item.get("seller").__dict__, "Buyer":item.get("buyer").__dict__})
-        with open("sales_history.json", "w") as data:
+            product=item.get("product")
+            seller=item.get("seller")
+            buyer=item.get("buyer")
+            clear_data.append({"Product":product.product_id, "sales":seller.user_id, "Buyer":buyer.user_id})
+        with open("sales_history_new.json", "w") as data:
             data.write(json.dumps({"Sellers": clear_data}, indent=4))
-        print(clear_data)
 
     def load_storage(self):
         with open("markettplace_data.json", "r") as data:
@@ -181,7 +183,7 @@ class Marketplace:
             self.storage.append(product)
 
     def load_hostory_of_sales(self):
-        with open("sales_history.json", "r") as data:
+        with open("sales_history_new.json", "r") as data:
             data=json.loads(data.read())
             data=data.get("Sellers")
             load_sale=Sale.load_sales(data, self.users, self.storage)
@@ -201,21 +203,19 @@ class Sale:
     def load_sales(cls,sales, users, storage):
         temp_data=[]
         for sale in sales:
-            seller=sale.get("Seller")
-            seller=seller.get("user_id")
+            product=sale.get("Product")
+            seller=sale.get("sales")
             buyer=sale.get("Buyer")
-            buyer=buyer.get("user_id")
+
             if users:
                 seller=users.select_user_by_id(seller)
                 buyer=users.select_user_by_id(buyer)
-            product=sale.get("Product")
-            product=product.get("product_id")
             for pro in storage:
-                if pro.product_id==product:
-                    product=pro
-            temp_data.append(cls(product, seller, buyer))
+                    if product==pro.product_id:
+                        print(pro)
+                        product=pro
+            temp_data.append(cls(product, seller,buyer))
         return temp_data
-
     def __str__(self):
         return f"{self.product}, {self.seller}, {self.buyer}"
 
