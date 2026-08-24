@@ -55,8 +55,10 @@ class Users:
             users=User.load_user(users.get("Users"))
             for user in users:
                 self.users.append(user)
-        except json.JSONDecodeError:
-            print("db not found")
+        except Exception as error:
+            line_number = error.__traceback__.tb_lineno
+            print(f"Error message: {error}")
+            print(f"Error happened on line: {line_number}")
     def __str__(self):
         return f"{self.users}"
 
@@ -185,8 +187,10 @@ class Marketplace:
                 storage=Product.load_product(storage.get("Product"))
             for product in storage:
                 self.storage.append(product)
-        except json.JSONDecodeError:
-            print("Db not found")
+        except Exception as error:
+            line_number = error.__traceback__.tb_lineno
+            print(f"Error message: {error}")
+            print(f"Error happened on line: {line_number}")
 
     def load_hostory_of_sales(self):
         with open("sales_history_new.json", "r") as data:
