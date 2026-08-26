@@ -1,8 +1,9 @@
 import json
 class User:
     next_id=1
-    def __init__(self, user_name, user_id=None):
+    def __init__(self, user_name, user_active=True, user_id=None):
         self.user_name=user_name
+        self.user_active=user_active
         if user_id is not None:
             self.user_id=user_id
         else:
@@ -11,17 +12,13 @@ class User:
 
     @classmethod
     def load_user(cls, user):
-        max_id=0
-        temp_users=[]
-        for u in user:
-            load_user=cls(u["user_name"], u["user_id"])
-            if u["user_id"]>max_id:
-                max_id=u["user_id"]
-            temp_users.append(load_user)
-        User.next_id=max_id+1
-        return temp_users
+        return cls(user.get("user_name"), user.get("user_active"), user.get("user_id"))
+
+    def prepare_user_data_to_save(self):
+        return self.__dict__
+
     def __str__(self):
-        return f"{self.user_name} {self.user_id}"
+        return f"{self.user_name} {self.user_active} {self.user_id}"
 
     def __repr__(self):
         return self.__str__()
@@ -34,31 +31,42 @@ class Users:
     def add_user(self, user):
         self.users.append(user)
 
-    def list_of_users(self):
-        print(self.users)
-
-    def select_user(self, user_name):
-        for user in self.users:
-            if user.user_name==user_name:
-                return user
-
-
     def select_user_by_id(self, user_id):
         for user in self.users:
             if user.user_id==user_id:
                 return user
 
     def load_users(self):
+        max_id=0
         try:
             with open("markettplace_data.json", "r") as data:
                 users=json.loads(data.read())
-            users=User.load_user(users.get("Users"))
+                users=users.get("Users")
             for user in users:
-                self.users.append(user)
+                load_user=User.load_user(user)
+                if load_user.user_id > max_id:
+                    max_id=load_user.user_id
+                self.users.append(load_user)
+            if max_id > User.next_id:
+                User.next_id=max_id+1
         except Exception as error:
             line_number = error.__traceback__.tb_lineno
             print(f"Error message: {error}")
             print(f"Error happened on line: {line_number}")
+
+    def deactivation_user(self, search_user):
+        search = self.select_user_by_id(search_user)
+        if search:
+            if search.user_active==True:
+                search.user_active=False
+            else:
+                print("User already deactivated")
+        else:
+            print("User not found")
+
+    def list_of_users(self):
+        print(self.users)
+
     def __str__(self):
         return f"{self.users}"
 
@@ -77,6 +85,9 @@ class Product:
             self.product_id=Product.next_id
             Product.next_id+=1
 
+    def prepare_data_product(self):
+        return self.__dict__
+
     def mark_as_sold(self):
         if self.sold==False:
             self.sold=True
@@ -85,16 +96,8 @@ class Product:
             return False
 
     @classmethod
-    def load_product(cls, products):
-        temp_data=[]
-        max_id=0
-        for product in products:
-            load_product=cls(product["product_name"], product["price"], product["sold"], product["product_id"])
-            if product["product_id"] > max_id:
-                max_id=product["product_id"]
-            temp_data.append(load_product)
-        Product.next_id=max_id+1
-        return temp_data
+    def load_product(cls, product):
+        return cls(product.get("product_name"), product.get("price"), product.get("sold"), product.get("product_id"))
     def __str__(self):
         return f"{self.product_name}, {self.price}R$, {self.sold}, {self.product_id}"
 
@@ -111,8 +114,19 @@ class Marketplace:
     def add_product(self, product):
         self.storage.append(product)
 
-    def marketplace_products(self):
+    def remove_product(self, product):
+        search=self.select_product(product)
+        if search:
+            if search.sold==False:
+                self.storage.remove(search)
+            else:
+                print("This product is sold, it can't removed")
+        else:
+            print(f"Product: {product} not found")
+
+    def list_of_products(self):
         print(self.storage)
+
     def select_product(self, select_product):
         for product in self.storage:
             if select_product==product.product_name:
@@ -124,13 +138,19 @@ class Marketplace:
                 return product
 
     def complete_sale(self, product, seller, buyer):
-    
         if product and seller and buyer:
-            if product.mark_as_sold():
-                finish_sale = Sale(product, seller, buyer)
-                self.sale_completed.append(finish_sale)
+            if seller.user_active and buyer.user_active:
+                if product.mark_as_sold():
+                    finish_sale = Sale(product, seller, buyer)
+                    print(f"The seller: {seller.user_name} sell: {product.product_name} to: {buyer.user_name} by: {product.price}R$")
+                    self.sale_completed.append(finish_sale)
+                else:
+                    print(f"Sorry mr.(s) {buyer.user_name} this product is not available")
             else:
-                print(f"Sorry mr.(s) {buyer.user_name} this product is not available")
+                if seller.user_active == False:
+                    print(f"Sorry {seller.user_name} please check you your register")
+                elif buyer.user_active == False:
+                    print(f"Sorry {buyer.user_name} please check you your register")
         else:
             if not product:
                 print("Product not found")
@@ -145,63 +165,53 @@ class Marketplace:
         else:
             print("No sales to display")
 
-
     def prepare_product_to_save(self):
-        temp_data=[]
-        print(self.storage)
-        for product in self.storage:
-            data=product.__dict__
-            temp_data.append(data)
-        return temp_data
+        return [product.prepare_data_product() for product in self.storage]
 
     def prepare_user_to_save(self):
-        temp_data=[]
-        users=self.users
-        print(users)
-        for user in users.users:
-            data=user.__dict__
-            temp_data.append(data)
-        return temp_data
+        return [user.prepare_user_data_to_save() for user in self.users.users]
 
     def save_data(self):
         with open("markettplace_data.json", "w") as data:
             data.write(json.dumps({"Product":self.prepare_product_to_save(), "Users":self.prepare_user_to_save()}, indent=4))
 
     def complete_sale_save(self):
-        temp_data = []
-        clear_data = []
+        clear_data=[]
         for item in self.sale_completed:
-            temp_data.append(item.__dict__)
-        for item in temp_data:
+            item=item.prepare_data_to_save()
             product=item.get("product")
             seller=item.get("seller")
             buyer=item.get("buyer")
-            clear_data.append({"Product":product.product_id, "sales":seller.user_id, "Buyer":buyer.user_id})
+            clear_data.append({"Product":product.product_id, "Seller":seller.user_id, "Buyer":buyer.user_id})
         with open("sales_history_new.json", "w") as data:
-            data.write(json.dumps({"Sellers": clear_data}, indent=4))
+            data.write(json.dumps({"Sales": clear_data}, indent=4))
 
     def load_storage(self):
         try:
+            max_id=0
             with open("markettplace_data.json", "r") as data:
                 storage=(json.loads(data.read()))
-                storage=Product.load_product(storage.get("Product"))
-            for product in storage:
-                self.storage.append(product)
+                storage=(storage.get("Product"))
+                for product in storage:
+                    load_product=Product.load_product(product)
+                    if load_product.product_id > max_id:
+                        max_id=load_product.product_id
+                    self.storage.append(load_product)
+            if max_id > Product.next_id:
+                Product.next_id=max_id+1
         except Exception as error:
             line_number = error.__traceback__.tb_lineno
             print(f"Error message: {error}")
             print(f"Error happened on line: {line_number}")
 
-    def load_hostory_of_sales(self):
+    def load_history_of_sales(self):
         with open("sales_history_new.json", "r") as data:
             data=json.loads(data.read())
-            data=data.get("Sellers")
-            load_sale=Sale.load_sales(data, self.users, self.storage)
-            for sale in load_sale:
-                self.sale_completed.append(sale)
-
+            for d in data.get("Sales"):
+                load_sale=Sale.load_sales(d, self.users, self.storage)
+                self.sale_completed.append(load_sale)
     def __str__(self):
-        return f"{self.storage}, {self.save_history}, {self.sale_completed}"
+        return f"{self.storage}, {self.sale_completed}"
 
 class Sale:
     def __init__(self, product, seller, buyer):
@@ -209,23 +219,21 @@ class Sale:
         self.seller=seller
         self.buyer=buyer
 
-    @classmethod
-    def load_sales(cls,sales, users, storage):
-        temp_data=[]
-        for sale in sales:
-            product=sale.get("Product")
-            seller=sale.get("sales")
-            buyer=sale.get("Buyer")
+    def prepare_data_to_save(self):
+        return self.__dict__
 
-            if users:
-                seller=users.select_user_by_id(seller)
-                buyer=users.select_user_by_id(buyer)
-            for pro in storage:
-                    if product==pro.product_id:
-                        print(pro)
-                        product=pro
-            temp_data.append(cls(product, seller,buyer))
-        return temp_data
+    @classmethod
+    def load_sales(cls,sale, users, storage):
+        product=sale.get("Product")
+        seller=sale.get("Seller")
+        buyer=sale.get("Buyer")
+        if users:
+            seller=users.select_user_by_id(seller)
+            buyer=users.select_user_by_id(buyer)
+        for pro in storage:
+            if product==pro.product_id:
+                return cls(pro, seller, buyer)
+
     def __str__(self):
         return f"{self.product}, {self.seller}, {self.buyer}"
 
@@ -234,5 +242,5 @@ class Sale:
 
 users = Users()
 marketplace=Marketplace(users)
-marketplace.marketplace_products()
-users.list_of_users()
+marketplace.load_history_of_sales()
+marketplace.list_of_salers()
