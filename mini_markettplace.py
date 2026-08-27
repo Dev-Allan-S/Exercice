@@ -205,11 +205,17 @@ class Marketplace:
             print(f"Error happened on line: {line_number}")
 
     def load_history_of_sales(self):
-        with open("sales_history_new.json", "r") as data:
-            data=json.loads(data.read())
-            for d in data.get("Sales"):
-                load_sale=Sale.load_sales(d, self.users, self.storage)
-                self.sale_completed.append(load_sale)
+        try:
+            with open("sales_history_new.json", "r") as data:
+                data=json.loads(data.read())
+                for d in data.get("Sales"):
+                    load_sale=Sale.load_sales(d, self.users, self.storage)
+                    self.sale_completed.append(load_sale)
+        except Exception as error:
+            line_number = error.__traceback__.tb_lineno
+            print(f"Error message: {error}")
+            print(f"Error happened on line: {line_number}")
+
     def __str__(self):
         return f"{self.storage}, {self.sale_completed}"
 
@@ -239,8 +245,3 @@ class Sale:
 
     def __repr__(self):
         return self.__str__()
-
-users = Users()
-marketplace=Marketplace(users)
-marketplace.load_history_of_sales()
-marketplace.list_of_salers()
